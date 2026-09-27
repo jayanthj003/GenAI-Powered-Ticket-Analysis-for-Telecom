@@ -83,8 +83,8 @@ This system helps telecom support teams by:
 ### 1. Clone/Download the Repository
 
 ```bash
-git clone https://github.com/Ardnekol/Team_Sangareddy.git
-cd Team_Sangareddy
+git clone https://github.com/jayanthj003/GenAI-Powered-Ticket-Analysis-for-Telecom.git
+cd GenAI-Powered-Ticket-Analysis-for-Telecom
 ```
 
 ### 2. Install Dependencies
