@@ -1,0 +1,385 @@
+# GenAI-Powered Ticket Analysis for Telecom
+
+A Generative AI-based ticket analysis assistant for telecom service providers that analyzes incoming ticket descriptions and suggests solutions based on similar resolved tickets, ranking the top 3 solutions by suitability percentage.
+
+## 🎯 Objective
+
+This system helps telecom support teams by:
+- Analyzing customer ticket descriptions
+- Finding similar resolved tickets from historical data
+- Generating and ranking top 3 solution options with suitability percentages
+- Providing reasoning for each recommended solution
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐
+│  Streamlit UI   │
+│  (User Input)   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Vector Store   │
+│  (FAISS Index)  │
+│  + Embeddings   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Similar Ticket  │
+│   Retrieval     │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  LLM Generator  │
+│  (Groq/OpenAI)  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Ranked Solutions│
+│  (Top 3 + %)    │
+└─────────────────┘
+```
+
+### Components
+
+1. **Data Processor** (`data_processor.py`)
+   - Loads and preprocesses telecom ticket data
+   - Combines ticket fields (issue, root cause, resolution) for embedding
+   - Prepares metadata for retrieval context
+
+2. **Vector Store** (`vector_store.py`)
+   - Uses Sentence Transformers for embeddings (`all-MiniLM-L6-v2`)
+   - Stores embeddings in FAISS for efficient similarity search
+   - Supports index persistence and loading
+
+3. **Solution Generator** (`solution_generator.py`)
+   - Supports both Groq LLM (default) and OpenAI GPT models
+   - Groq API key is hardcoded for convenience (no setup required)
+   - Generates ranked solutions with suitability percentages
+   - Provides reasoning for each solution
+   - Groq offers faster inference (500+ tokens/sec), OpenAI offers higher quality
+
+4. **Streamlit App** (`main.py`)
+   - User-friendly web interface
+   - Ticket input and solution display
+   - Similar tickets reference view
+   - Provider selection (Groq/OpenAI) in sidebar
+
+## 📋 Prerequisites
+
+- Python 3.8+
+- **Groq API key is pre-configured** (hardcoded in code - works out of the box!)
+- Or your own API key for:
+  - **Groq** (recommended, fast & free) - Get one at https://console.groq.com
+  - **OpenAI** (for higher quality) - Get one at https://platform.openai.com/api-keys
+- 2GB+ RAM (for embedding model and FAISS index)
+
+## 🚀 Setup Instructions
+
+### 1. Clone/Download the Repository
+
+```bash
+git clone https://github.com/Ardnekol/Team_Sangareddy.git
+cd Team_Sangareddy
+```
+
+### 2. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+**Note:** The first run will download the sentence transformer model (~80MB), which may take a few minutes.
+
+### 3. API Key Configuration
+
+**✅ Groq (Default - No Setup Required!)**
+The Groq API key is hardcoded in the code, so Groq works out of the box!
+
+**Optional: Use Your Own API Key**
+```bash
+# For Groq (overrides hardcoded key)
+export GROQ_API_KEY="your-groq-api-key-here"
+
+# For OpenAI
+export OPENAI_API_KEY="your-openai-api-key-here"
+```
+
+### 4. Run the Application
+
+```bash
+streamlit run main.py
+```
+
+The app will open in your default browser at `http://localhost:8501`
+
+### 5. Initialize the System
+
+On first run, the system will automatically:
+1. Load the ticket data from `telecom_tickets_10000_12cats.json`
+2. Generate embeddings for all tickets
+3. Build the FAISS index
+4. Save the index for future use
+
+This process takes approximately 5-10 minutes for 10,000 tickets. Subsequent runs are instant as the index is cached.
+
+## 💻 Usage
+
+1. **Run App**: `streamlit run main.py`
+2. **Wait for Initialization**: System auto-initializes on first run (index is cached after)
+3. **Select Provider**: Choose Groq (default) or OpenAI from the sidebar
+4. **Enter Ticket**: Type or paste the customer issue description
+5. **Analyze**: Click "🔍 Analyze Ticket"
+6. **Review Results**: 
+   - View similar resolved tickets (reference)
+   - Review top 3 ranked solutions with suitability percentages
+   - Read reasoning for each solution
+
+### Example Ticket Description
+
+```
+Customer reports intermittent internet connectivity on mobile data in the late afternoon. Connection drops frequently and websites fail to load.
+```
+
+## 📊 Dataset
+
+The system uses a dataset of 10,000 telecom support tickets across 12 categories:
+- Network issues
+- Billing
+- Service activation
+- Router problems
+- Fiber connectivity
+- Roaming
+- SIM/KYC
+- And more...
+
+Each ticket contains:
+- `ticket_id`: Unique identifier
+- `category`: Issue category
+- `customer_issue_description`: Customer's reported issue
+- `root_cause`: Identified root cause
+- `final_resolution`: How the issue was resolved
+
+## ☁️ Cloud Deployment
+
+### Deploying on Replit
+
+1. **Create a new Replit project**
+   - Choose Python template
+   - Import from GitHub: `https://github.com/Ardnekol/Team_Sangareddy`
+
+2. **Install dependencies**
+   - Replit will auto-install from `requirements.txt`
+   - Or run: `pip install -r requirements.txt`
+
+3. **Set environment variables (Optional)**
+   - Groq works out of the box (API key is hardcoded)
+   - For OpenAI, go to Secrets tab and add `OPENAI_API_KEY`
+
+4. **Run the app**
+   ```bash
+   streamlit run main.py --server.port 8501
+   ```
+
+5. **Make it public**
+   - Use Replit's webview or deploy as a web app
+
+### Alternative: Deploy on Streamlit Cloud
+
+1. Push code to GitHub
+2. Connect repository to [Streamlit Cloud](https://streamlit.io/cloud)
+3. Optionally set `OPENAI_API_KEY` in secrets (Groq works by default)
+4. Deploy!
+
+### Alternative: Deploy on AWS/Azure/GCP
+
+1. Create a VM instance (t2.medium or larger)
+2. Install Python and dependencies
+3. Run Streamlit with a reverse proxy (nginx)
+4. Set up SSL certificate
+5. Configure firewall rules
+
+## 🔧 Configuration
+
+### Changing the Embedding Model
+
+Edit `vector_store.py`:
+```python
+vector_store = TicketVectorStore(model_name='your-model-name')
+```
+
+Popular alternatives:
+- `all-mpnet-base-v2` (better quality, slower)
+- `paraphrase-MiniLM-L6-v2` (faster, good quality)
+
+### Changing the LLM Model
+
+Edit `main.py` or `solution_generator.py`:
+```python
+# For Groq (default: llama-3.3-70b-versatile)
+generator = SolutionGenerator(provider="groq", model="llama-3.3-70b-versatile")
+
+# For OpenAI (default: gpt-3.5-turbo)
+generator = SolutionGenerator(provider="openai", model="gpt-4")
+```
+
+**Available Groq Models:**
+- `llama-3.3-70b-versatile` (default, best quality)
+- `llama-3.1-8b-instant` (faster, good quality)
+- `mixtral-8x7b-32768` (long context)
+
+**Note:** `llama-3.1-70b-versatile` has been decommissioned by Groq. The system now uses `llama-3.3-70b-versatile` by default.
+
+**Available OpenAI Models:**
+- `gpt-3.5-turbo` (default, cost-effective)
+- `gpt-4` (higher quality, more expensive)
+- `gpt-4-turbo` (best quality)
+
+### Adjusting Similarity Search
+
+Edit `main.py`:
+```python
+similar_tickets = vector_store.search(ticket_description, k=10)  # Get more results
+```
+
+## 🎓 Learnings & Challenges
+
+### Challenges Faced
+
+1. **Embedding Model Selection**
+   - **Challenge**: Balancing quality vs. speed
+   - **Solution**: Chose `all-MiniLM-L6-v2` for good balance
+   - **Learning**: Smaller models work well for domain-specific tasks
+
+2. **FAISS Index Building**
+   - **Challenge**: Initial index building was slow
+   - **Solution**: Implemented index persistence to avoid rebuilding
+   - **Learning**: Cache embeddings and indices for production use
+
+3. **LLM Response Parsing**
+   - **Challenge**: LLM responses sometimes not in expected JSON format
+   - **Solution**: Implemented fallback parser with regex
+   - **Learning**: Always have error handling for LLM outputs
+
+4. **Memory Management**
+   - **Challenge**: Loading all embeddings in memory
+   - **Solution**: Used FAISS for efficient storage and retrieval
+   - **Learning**: Vector databases are essential for production systems
+
+5. **Solution Ranking**
+   - **Challenge**: Getting consistent suitability percentages
+   - **Solution**: Structured prompts with explicit format requirements
+   - **Learning**: Clear instructions improve LLM output quality
+
+### Key Learnings
+
+1. **Embedding Quality Matters**: Better embeddings = better similarity search = better solutions
+
+2. **Context is Critical**: Including root cause and resolution in embeddings improves matching
+
+3. **Hybrid Approach Works Best**: Combining vector search (for retrieval) with LLM (for generation) provides best results
+
+4. **User Experience**: Clear UI with progress indicators and error handling improves adoption
+
+5. **Scalability**: FAISS handles thousands of tickets efficiently; for millions, consider cloud vector DBs (Pinecone, Weaviate)
+
+## 🔧 Troubleshooting
+
+### ImportError: cannot import name 'PreTrainedModel' from 'transformers'
+
+This error occurs due to version incompatibility between `transformers` and `sentence-transformers`.
+
+### ImportError: cannot import name 'is_quanto_available' from 'transformers.utils'
+
+This error occurs when `transformers` version is too old and doesn't have the `is_quanto_available` function required by `sentence-transformers 2.7.0`.
+
+### ImportError: cannot import name 'translate_to_torch_parallel_style' from 'transformers.pytorch_utils'
+
+This error occurs when `transformers` version is too old and doesn't have the `translate_to_torch_parallel_style` function required by `sentence-transformers 2.7.0`.
+
+### ImportError: cannot import name 'ImageNetInfo' from 'timm.data'
+
+This error occurs when `timm` (PyTorch Image Models) version is too old. Upgrading `timm` resolves this issue.
+
+**Quick Fix (fixes all import errors):**
+```bash
+# Uninstall conflicting packages
+pip uninstall -y transformers sentence-transformers tokenizers timm
+
+# Reinstall compatible versions (tested and working)
+pip install transformers==4.48.0
+pip install tokenizers==0.21.4
+pip install sentence-transformers==2.7.0
+pip install timm>=1.0.0
+pip install "pillow>=7.1.0,<11"
+```
+
+Or use the provided fix script:
+```bash
+chmod +x fix_import_error.sh
+./fix_import_error.sh
+```
+
+**Note:** These versions are tested and work together:
+- `transformers==4.48.0` (has all required functions and compatible with sentence-transformers)
+- `tokenizers==0.21.4` (compatible with transformers 4.48.0)
+- `sentence-transformers==2.7.0` (stable version)
+- `timm>=1.0.0` (required for transformers 4.48.0)
+- `pillow>=7.1.0,<11` (compatible with Streamlit)
+
+### Other Common Issues
+
+**Issue**: "Module not found" errors
+- **Solution**: Run `pip install -r requirements.txt` to ensure all dependencies are installed
+
+**Issue**: "Index not found"
+- **Solution**: Click "Initialize System" in the Streamlit sidebar to build the index
+
+**Issue**: "API error" or "Rate limit exceeded"
+- **Solution**: Check your API key, verify credits/access, and check rate limits in your provider dashboard
+
+**Issue**: App is slow on first run
+- **Solution**: First run builds the vector index (5-10 minutes). Subsequent runs are fast as the index is cached.
+
+## 🔮 Future Enhancements
+
+- [ ] Support for more LLM providers (Gemini, Anthropic, Cohere)
+- [ ] Fine-tuned embedding model on telecom domain data
+- [ ] Multi-language support
+- [ ] Solution confidence scoring
+- [ ] Integration with ticketing systems (Jira, ServiceNow)
+- [ ] Analytics dashboard for solution effectiveness
+- [ ] Feedback loop to improve recommendations
+
+## 📝 License
+
+This project is for educational/demonstration purposes.
+
+## 👥 Contributors
+
+Built as part of GenAI Evaluation Project.
+
+## 📚 Documentation
+
+- **[Technical Documentation](TECHNICAL_DOCUMENTATION.md)**: In-depth technical details, architecture, algorithms, and step-by-step workflow
+- **[Quick Start Guide](QUICKSTART.md)**: Get started in 5 minutes
+- **[Deployment Guide](REPLIT_DEPLOY.md)**: Deploy on Replit or other platforms
+
+## 📞 Support
+
+For issues or questions, please check:
+- Groq API documentation: https://console.groq.com/docs
+- OpenAI API documentation: https://platform.openai.com/docs
+- Streamlit documentation: https://docs.streamlit.io
+- FAISS documentation: https://github.com/facebookresearch/faiss
+
+---
+
+**Note**: This system uses Groq by default with a pre-configured API key (works out of the box!).
+- **Groq**: Pre-configured, free tier with generous limits, very fast inference (500+ tokens/sec)
+- **OpenAI**: Pay-per-use, requires your own API key
+
